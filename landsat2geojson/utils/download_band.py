@@ -9,7 +9,7 @@ from tqdm import tqdm
 logger = logging.getLogger('__name__')
 
 
-def download_feature(feature_, bands_, data_folder_):
+def download_scene(feature_, bands_, data_folder_):
     props = feature_.get("properties", {})
     id = f"{feature_.get('id', '').split('_02_')[0]}_01_T1".replace("L2SP", "L1TP")
     wrs_path = props.get("landsat:wrs_path", "")
@@ -20,11 +20,12 @@ def download_feature(feature_, bands_, data_folder_):
     create_folder(data_folder_band)
     session = requests.Session()
 
-    def download_tiff(file_url_, file_path_, session_):
+    def download_tiff(file_url_, file_path_, band_, session_):
         status = {
             'is_download': True,
             'file_url': file_url_,
-            'file_path': file_path_
+            'file_path': file_path_,
+            'band': band_
         }
         if not os.path.isfile(file_path_):
             r = session_.get(file_url_, timeout=TIMEOUT)
@@ -37,14 +38,14 @@ def download_feature(feature_, bands_, data_folder_):
         return status
 
     status_download = Parallel(n_jobs=-1)(
-        delayed(download_tiff)(f"{path_url}/{id}_{band}.TIF", f'{data_folder_band}/{id}_{band}.TIF', session)
+        delayed(download_tiff)(f"{path_url}/{id}_{band}.TIF", f'{data_folder_band}/{id}_{band}.TIF', band, session)
         for band in bands_
     )
     props['status_download'] = status_download
     return feature_
 
 
-def download_features(features, bands, data_folder):
-    status_download = [download_feature(feature, bands, data_folder) for feature in
-                       tqdm(features, desc="download features tiff")]
+def download_scenes(scenes, bands, data_folder):
+    status_download = [download_scene(feature, bands, data_folder) for feature in
+                       tqdm(scenes, desc="download features tiff")]
     return status_download

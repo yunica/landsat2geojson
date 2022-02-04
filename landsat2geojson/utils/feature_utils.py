@@ -4,6 +4,7 @@ from shapely.ops import unary_union
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from .constants import FEATURE_CLEAN_FIELDS
+from copy import deepcopy
 
 
 def fc2shp(features_):
@@ -59,3 +60,23 @@ def minor_cloud(feature_list):
 def create_folder(path_):
     if path_[:5] not in ["s3://", "gs://"]:
         os.makedirs(path_, exist_ok=True)
+
+
+def correct_download(feature):
+    return all([i.get('is_download') for i in feature.get('properties', {}).get('status_download', [])])
+
+
+def merge_scene_features(scenes, features_shp):
+    scenes_shp = fc2shp(scenes)
+
+    # compile features include
+    for scene in scenes_shp:
+        scene_shp = scene['geom']
+        features_contains = []
+        for feature in features_shp:
+            feature_shp = feature['geom']
+            if scene_shp.contains(feature_shp) and not feature.get('is_include'):
+                features_contains.append(deepcopy(feature))
+                feature['is_include'] = True
+        scene['features_contains'] = features_contains
+        return scenes_shp

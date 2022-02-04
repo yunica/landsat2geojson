@@ -63,7 +63,12 @@ def create_folder(path_):
 
 
 def correct_download(feature):
-    return all([i.get('is_download') for i in feature.get('properties', {}).get('status_download', [])])
+    return all(
+        [
+            i.get("is_download")
+            for i in feature.get("properties", {}).get("status_download", [])
+        ]
+    )
 
 
 def merge_scene_features(scenes, features_shp):
@@ -71,12 +76,12 @@ def merge_scene_features(scenes, features_shp):
 
     # compile features include
     for scene in scenes_shp:
-        scene_shp = scene['geom']
+        scene_shp = scene["geom"]
         features_contains = []
         for feature in features_shp:
-            feature_shp = feature['geom']
-            if scene_shp.contains(feature_shp) and not feature.get('is_include'):
+            feature_shp = feature["geom"]
+            if scene_shp.contains(feature_shp) and not feature.get("is_include"):
                 features_contains.append(deepcopy(feature))
-                feature['is_include'] = True
-        scene['features_contains'] = features_contains
+                feature["is_include"] = True
+        scene["features_contains"] = features_contains
         return scenes_shp

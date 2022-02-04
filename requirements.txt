@@ -1,0 +1,11 @@
+pkg_resources==0.0.0
+click
+geojson
+requests
+rasterio
+joblib
+tqdm
+shapely
+mercantile
+pandas
+geopandas

@@ -3,6 +3,10 @@ import itertools
 from datetime import datetime, timedelta
 from .constants import DAYS_AGO, LIMIT_QUERY
 
+from landsatxplore.api import API
+from landsatxplore.earthexplorer import EarthExplorer
+from landsatxplore.errors import LandsatxploreError
+
 
 def fetch_sat_api(query):
     """
@@ -26,12 +30,7 @@ def fetch_sat_api(query):
                 "collections": ["landsat-c2l2-sr", "landsat-c2l2-st"],
                 "eo:cloud_cover": {"lte": 0.5},
                 "platform": {"in": ["LANDSAT_8"]},
-                "landsat:collection_category": {
-                    "in": [
-                        "T1",
-                        "T2",
-                    ]
-                },
+                "landsat:collection_category": {"in": ["T1", "T2",]},
             },
             "limit": LIMIT_QUERY,
             "time": f'{months_ago}/{today.strftime("%Y-%m-%d")}',
@@ -46,3 +45,22 @@ def fetch_sat_api(query):
     if not meta.get("found"):
         return {}
     return data
+
+
+def wraper_landsadxplore(username, password, bbox):
+    api = API(username, password)
+    today = datetime.today()
+    end = (today - timedelta(days=DAYS_AGO)).strftime("%Y-%m-%d")
+    where = {
+        "dataset": "landsat_ot_c2_l2",
+        "bbox": bbox,
+        "start_date": end,
+        "end_date": today.strftime("%Y-%m-%d"),
+        "max_results": 200,
+    }
+    results = api.search(**where)
+    api.logout()
+    return results
+
+
+# search --dataset landsat_ot_c2_l2 --location 12.53 -1.53 --start 2022-01-01 --end 2022-12-31

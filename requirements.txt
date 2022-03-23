@@ -9,3 +9,4 @@ shapely
 mercantile
 pandas
 geopandas
+git+https://github.com/faendeg/landsatxplore.git

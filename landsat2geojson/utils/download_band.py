@@ -9,7 +9,6 @@ from .constants import WATER_BANDS
 from landsatxplore.errors import EarthExplorerError
 import rasterio as rio
 from rasterio import mask
-import copy
 import geopandas as gpd
 from .feature_utils import create_folder, clean_path, url2name, get_crs_dataset
 

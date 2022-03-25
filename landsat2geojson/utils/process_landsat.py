@@ -14,13 +14,15 @@ logger = logging.getLogger("__name__")
 def calculate_mndwi_feature(scenes, data_folder):
     def calculate_mndwi(scene_, data_folder_):
         raw_data = scene_.get("raw_data")
-        band3 = raw_data.get("B3").get("data_read").get("out_image")
-        band6 = raw_data.get("B6").get("data_read").get("out_image")
+        band3 = raw_data.get("B3").get("data_read").get("out_image").astype("float32")
+        band6 = raw_data.get("B6").get("data_read").get("out_image").astype("float32")
         extra = raw_data.get("B3").get("data_read").get("meta")
 
-        mndwi = np.where(
+        mndwi_all = np.where(
             ((band3 + band6) == 0.0), 0, ((band3 - band6) / (band3 + band6))
         )
+        mndwi = np.where(mndwi_all >= 0, mndwi_all, 0)
+
         raw_data["MNDWI"] = mndwi
 
         # vector
@@ -31,10 +33,10 @@ def calculate_mndwi_feature(scenes, data_folder):
             "properties": {"name": f"urn:ogc:def:crs:EPSG::{crs}"},
         }
 
-        mndwi_32 = mndwi.astype("float32")
+        # mndwi_32 = mndwi.astype("float32")
         mask = mndwi != 0
         vector_data = []
-        for (p, v) in rio_shape(np.round(mndwi_32, 0), mask=mask, transform=transform_):
+        for (p, v) in rio_shape(np.round(mndwi, 2), mask=mask, transform=transform_):
             vector_data.append(
                 {"type": "Feature", "properties": {"val": v}, "geometry": p}
             )
@@ -45,7 +47,7 @@ def calculate_mndwi_feature(scenes, data_folder):
         if data_folder:
             display_id = scene_.get("display_id")
             with rio.open(
-                f"{data_folder_}/{display_id}__MNDWI.TIF", "w", **extra
+                    f"{data_folder_}/{display_id}__MNDWI.TIF", "w", **extra
             ) as src:
                 src.write(mndwi, 1)
 

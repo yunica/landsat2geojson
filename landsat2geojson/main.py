@@ -13,7 +13,7 @@ from utils.download_band import download_scenes
 from utils.process_landsat import calculate_mndwi_feature
 
 
-def landsar2geojson(username, password, geojson_file, data_folder, geojson_output):
+def landsat2geojson(username, password, geojson_file, data_folder, geojson_output):
     features = json.load(open(geojson_file)).get("features")
     features_shp = fc2shp(features)
     box_merge = fc2box(features_shp)
@@ -21,17 +21,15 @@ def landsar2geojson(username, password, geojson_file, data_folder, geojson_outpu
     data_query = wraper_landsadxplore(username, password, box_merge.bounds)
     if not data_query:
         raise Exception("No results on query")
-    filter_data = [d for d in data_query if "LC09" in d.get("display_id")]
-    scenes = [clean_feature(scene) for scene in filter_data]
-    scenes_group = group_by_path_row(scenes)
-    scenes_minor_cloud = [minor_cloud(scene) for scene in scenes_group.values()]
+    dara_result = [d for d in data_query if "LC09" in d.get("display_id")]
+    dara_result = [clean_feature(scene) for scene in dara_result]
+    dara_result = group_by_path_row(dara_result)
+    dara_result = [minor_cloud(scene) for scene in dara_result.values()]
     # remove innecesary & merge features
-    scenes_minor_cloud_merge = merge_scene_features(scenes_minor_cloud, features_shp)
-    scenes_download_clip = download_scenes(
-        username, password, scenes_minor_cloud_merge, data_folder
-    )
+    dara_result = merge_scene_features(dara_result, features_shp)
+    dara_result = download_scenes(username, password, dara_result, data_folder)
     # calculate mndwi
-    scenes_mndwi = calculate_mndwi_feature(scenes_download_clip)
+    dara_result = calculate_mndwi_feature(dara_result, data_folder)
     # search osm
 
 
@@ -65,7 +63,7 @@ def landsar2geojson(username, password, geojson_file, data_folder, geojson_outpu
 def main(
     username, password, geojson_file, data_folder, geojson_output,
 ):
-    landsar2geojson(username, password, geojson_file, data_folder, geojson_output)
+    landsat2geojson(username, password, geojson_file, data_folder, geojson_output)
 
 
 if __name__ == "__main__":

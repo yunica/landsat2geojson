@@ -24,7 +24,7 @@ class WrapperEarthExplorer(EarthExplorer):
     def _read_from_path(self, file_path, features_contains):
         dataset = rio.open(file_path,)
         if "4326" not in str(dataset.crs) and str(dataset.crs):
-            features_contains = features_contains.to_crs(get_crs_dataset(dataset))
+            features_contains = features_contains.to_crs(get_crs_dataset(dataset.crs))
 
         out_image, out_transform = mask.mask(
             dataset, list(features_contains), crop=True
@@ -36,12 +36,14 @@ class WrapperEarthExplorer(EarthExplorer):
                 "height": out_image.shape[1],
                 "width": out_image.shape[2],
                 "transform": out_transform,
+                "count": 1,
+                "dtype": "float64",
             }
         )
         return {
-            "profile": copy.deepcopy(dataset.profile),
+            "profile": dataset.profile,
             "meta": out_meta,
-            "out_image": out_image,
+            "out_image": out_image.squeeze(),
         }
 
     def _save_file_path(self, byio, output_dir, filename_):
@@ -94,7 +96,7 @@ class WrapperEarthExplorer(EarthExplorer):
                         dataset = memfile.open()
                         if "4326" not in str(dataset.crs) and str(dataset.crs):
                             features_contains = features_contains.to_crs(
-                                get_crs_dataset(dataset)
+                                get_crs_dataset(dataset.crs)
                             )
 
                         out_image, out_transform = mask.mask(
@@ -107,13 +109,15 @@ class WrapperEarthExplorer(EarthExplorer):
                                 "height": out_image.shape[1],
                                 "width": out_image.shape[2],
                                 "transform": out_transform,
+                                "count": 1,
+                                "dtype": "float64",
                             }
                         )
 
                         return {
-                            "profile": copy.deepcopy(dataset.profile),
+                            "profile": dataset.profile,
                             "meta": out_meta,
-                            "out_image": out_image,
+                            "out_image": out_image.squeeze(),
                         }
 
         except requests.exceptions.Timeout:

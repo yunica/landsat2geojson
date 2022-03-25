@@ -93,9 +93,9 @@ def url2name(url_=""):
     return url_.split("/")[-1]
 
 
-def get_crs_dataset(dataset_):
+def get_crs_dataset(crs):
     try:
-        return int(str(dataset_.crs).split(":")[1])
+        return int(str(crs).split(":")[1])
     except Exception as ex:
         logger.error(ex.__str__())
     return 4326

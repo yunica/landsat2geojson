@@ -5,7 +5,6 @@ from joblib import Parallel, delayed
 import logging
 from tqdm import tqdm
 from landsatxplore.earthexplorer import EarthExplorer
-from .constants import WATER_BANDS
 from landsatxplore.errors import EarthExplorerError
 import rasterio as rio
 from rasterio import mask
@@ -20,8 +19,11 @@ EE_DOWNLOAD_URL = (
 
 
 class WrapperEarthExplorer(EarthExplorer):
+    def __init__(self, username, password):
+        super(WrapperEarthExplorer, self).__init__(username, password)
+
     def _read_from_path(self, file_path, features_contains):
-        dataset = rio.open(file_path,)
+        dataset = rio.open(file_path)
         if "4326" not in str(dataset.crs) and str(dataset.crs):
             features_contains = features_contains.to_crs(get_crs_dataset(dataset.crs))
 
@@ -128,6 +130,7 @@ class WrapperEarthExplorer(EarthExplorer):
         self,
         display_id,
         features_contains,
+        bands,
         output_dir="",
         dataset=None,
         timeout=300,
@@ -139,10 +142,10 @@ class WrapperEarthExplorer(EarthExplorer):
                 data_product_id="5f85f0419985f2aa",
                 display_id=f"L2SR_{display_id}_SR_{i}_TIF",
             )
-            for i in WATER_BANDS
+            for i in bands
         ]
         data_out = {}
-        for url, band in zip(urls, WATER_BANDS):
+        for url, band in zip(urls, bands):
             data_read = self._download(
                 url, features_contains, output_dir, timeout=timeout, skip=skip
             )
@@ -153,22 +156,24 @@ class WrapperEarthExplorer(EarthExplorer):
         return data_out
 
 
-def download_scenes(username, password, scenes, output_dir):
+def download_scenes(username, password, scenes, bands, output_dir):
     output_dir = clean_path(output_dir)
     ee = WrapperEarthExplorer(username, password)
 
-    def download_scene(ee_, scene_, output_dir_):
+    def download_scene(ee_, scene_, bands_, output_dir_):
         display_id = scene_.get("display_id")
         features_contains = gpd.GeoSeries(
             [i["geom"] for i in scene_.get("features_contains")]
         ).set_crs(4326)
         if not ee_.logged_in():
             ee_ = WrapperEarthExplorer(username, password)
-        scene_["raw_data"] = ee_.download(display_id, features_contains, output_dir_)
+        scene_["raw_data"] = ee_.download(
+            display_id, features_contains, bands_, output_dir_
+        )
         return scene_
 
     scenes_download = Parallel(n_jobs=-1)(
-        delayed(download_scene)(ee, scene, output_dir)
+        delayed(download_scene)(ee, scene, bands, output_dir)
         for scene in tqdm(scenes, desc="Prepare download data")
     )
     return scenes_download

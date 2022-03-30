@@ -11,19 +11,21 @@ from .feature_utils import get_crs_dataset
 logger = logging.getLogger("__name__")
 
 
-def calculate_mndwi_feature(scenes, data_folder):
-    def calculate_mndwi(scene_, data_folder_):
+def calculate_index_feature(scenes, metadata, data_folder):
+    def calculate_index(scene_, metadata_, data_folder_):
         raw_data = scene_.get("raw_data")
-        band3 = raw_data.get("B3").get("data_read").get("out_image").astype("float32")
-        band6 = raw_data.get("B6").get("data_read").get("out_image").astype("float32")
-        extra = raw_data.get("B3").get("data_read").get("meta")
+        bands_ = metadata_.get("bands")
+        index_name = metadata_.get("index_name")
 
-        mndwi_all = np.where(
-            ((band3 + band6) == 0.0), 0, ((band3 - band6) / (band3 + band6))
-        )
-        mndwi = np.where(mndwi_all >= 0, mndwi_all, 0)
+        bands = {
+            f"{i}": raw_data.get(i).get("data_read").get("out_image").astype("float32")
+            for i in bands_
+        }
+        extra = eval(metadata_.get("extra"))
 
-        raw_data["MNDWI"] = mndwi
+        index_result_all = eval(metadata_.get("formula"))
+        index_result = np.where(index_result_all >= 0, index_result_all, 0)
+        raw_data["index_result"] = index_result
 
         # vector
         transform_ = extra.get("transform")
@@ -33,34 +35,35 @@ def calculate_mndwi_feature(scenes, data_folder):
             "properties": {"name": f"urn:ogc:def:crs:EPSG::{crs}"},
         }
 
-        # mndwi_32 = mndwi.astype("float32")
-        mask = mndwi != 0
+        mask = index_result != 0
         vector_data = []
-        for (p, v) in rio_shape(np.round(mndwi, 2), mask=mask, transform=transform_):
+        for (p, v) in rio_shape(
+            np.round(index_result, 1), mask=mask, transform=transform_
+        ):
             vector_data.append(
                 {"type": "Feature", "properties": {"val": v}, "geometry": p}
             )
-        raw_data["MNDWI_vector"] = vector_data
+        raw_data["index_result_vector"] = vector_data
         raw_data["crs"] = crs
         raw_data["crs_json"] = crs_geojson
 
         if data_folder:
             display_id = scene_.get("display_id")
             with rio.open(
-                    f"{data_folder_}/{display_id}__MNDWI.TIF", "w", **extra
+                f"{data_folder_}/{display_id}__{index_name}.TIF", "w", **extra
             ) as src:
-                src.write(mndwi, 1)
+                src.write(index_result, 1)
 
             json.dump(
                 fc(vector_data, crs=crs_geojson),
-                open(f"{data_folder_}/{display_id}__MNDWI_VECTOR.geojson", "w"),
+                open(f"{data_folder_}/{display_id}__{index_name}_VECTOR.geojson", "w"),
                 indent=1,
             )
 
         return scene_
 
-    scenes_mndwi = Parallel(n_jobs=-1)(
-        delayed(calculate_mndwi)(scene, data_folder)
+    scenes_index = Parallel(n_jobs=-1)(
+        delayed(calculate_index)(scene, metadata, data_folder)
         for scene in tqdm(scenes, desc="calculate  MNDWI, vector")
     )
-    return scenes_mndwi
+    return scenes_index

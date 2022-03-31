@@ -21,7 +21,7 @@ setup(
     version="0.0.2",
     description="Script to extract features from landsat",
     long_description=long_description,
-    url="https://github.com/developmentseed/super_tiles",
+    url="https://github.com/yunica/landsat2geojson",
     keywords="",
     entry_points={"console_scripts": ["landsat2geojson = landsat2geojson.main:main",]},
     packages=find_packages(exclude=["docs", "tests*"]),

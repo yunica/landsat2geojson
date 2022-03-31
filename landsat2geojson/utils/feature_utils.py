@@ -99,3 +99,23 @@ def get_crs_dataset(crs):
     except Exception as ex:
         logger.error(ex.__str__())
     return 4326
+
+
+def line2polygon(features):
+    for feature in features:
+        sha = shape(feature.get("geometry"))
+        if "Line" in sha.geom_type and sha.is_closed:
+            feature["geometry"][
+                "type"
+            ] = f'{feature["geometry"]["type"].replace("LineString", "Polygon")}'
+            feature["geometry"]["coordinates"] = [
+                feature["geometry"]["coordinates"],
+            ]
+    return features
+
+
+def remove_shp(features):
+    for i in features:
+        if 'geom' in i.keys():
+            del i['geom']
+    return features

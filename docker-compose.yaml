@@ -1,0 +1,13 @@
+version: '3'
+services:
+  landsat2geojson:
+    image: landsat2geojson:v1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - LANDSATXPLORE_USERNAME=${LANDSATXPLORE_USERNAME}
+      - LANDSATXPLORE_PASSWORD=${LANDSATXPLORE_PASSWORD}
+    volumes:
+      - ./:/mnt
+    working_dir: /mnt

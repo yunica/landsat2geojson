@@ -23,7 +23,7 @@ setup(
     long_description=long_description,
     url="https://github.com/yunica/landsat2geojson",
     keywords="",
-    entry_points={"console_scripts": ["landsat2geojson = landsat2geojson.main:main",]},
+    entry_points={"console_scripts": ["landsat2geojson = landsat2geojson.main:main", ]},
     packages=find_packages(exclude=["docs", "tests*"]),
     include_package_data=True,
     install_requires=install_requires,

@@ -18,7 +18,7 @@ export LANDSATXPLORE_PASSWORD=<your_password>
 ```
 
 # Installation
-
+## repository
 the installation from the repository 
 
 ```sh 
@@ -27,7 +27,25 @@ cd landsat2geojson
 pip install .
 
 ```
+## docker
+build
 
+```sh
+export LANDSATXPLORE_USERNAME=<your_username>
+export LANDSATXPLORE_PASSWORD=<your_password>
+
+docker-compose build 
+```
+run
+
+```shell
+docker run  --rm -v ${PWD}:/mnt \
+  -e LANDSATXPLORE_USERNAME=$LANDSATXPLORE_USERNAME \
+  -e LANDSATXPLORE_PASSWORD=$LANDSATXPLORE_PASSWORD \
+  landsat2geojson:v1 \
+  landsat2geojson --geojson_file=test.geojson --data_folder=data/ --geojson_output=data/salida123.geojson  
+
+```
 # Usage
 
 

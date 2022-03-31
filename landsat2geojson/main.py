@@ -1,6 +1,6 @@
 import json
 import click
-from utils.feature_utils import (
+from .feature_utils import (
     fc2shp,
     fc2box,
     clean_feature,
@@ -9,11 +9,11 @@ from utils.feature_utils import (
     merge_scene_features,
     remove_shp,
 )
-from utils.search_metadata import wraper_landsadxplore
-from utils.download_band import download_scenes
-from utils.process_landsat import calculate_index_feature
-from utils.overpass_search import get_overpass_data
-from utils.constants import QUERY_DATA
+from .search_metadata import wraper_landsadxplore
+from .download_band import download_scenes
+from .process_landsat import calculate_index_feature
+from .overpass_search import get_overpass_data
+from .constants import QUERY_DATA
 import itertools
 from geojson.feature import FeatureCollection as fc
 
@@ -80,7 +80,7 @@ def landsat2geojson(
     json.dump(fc(data_merge), open(geojson_output, "w"), indent=2)
 
 
-@click.command(short_help="Script to extract features from landsat")
+@click.command(short_help="Script to find data from landsat and open street maps")
 @click.option(
     "-u",
     "--username",
@@ -97,28 +97,28 @@ def landsat2geojson(
 )
 @click.option(
     "--geojson_file",
-    help="Geojson file",
+    help="Pathfile from geojson input",
     required=True,
     type=str,
 )
 @click.option(
     "--data_folder",
-    help="Download folder",
+    help="Path from download data",
     type=str,
     required=False,
     default="",
 )
 @click.option(
     "--lansat_index",
-    help="Landsar normalized index ",
-    type=click.types.Choice(list(QUERY_DATA.keys())),
+    help="Landsar normalized index",
+    type=click.Choice(list(QUERY_DATA.keys())),
     default="WATER",
 )
 @click.option(
     "--geojson_output",
-    help="Original geojson with the attributes: stile, tiles_list, tiles_bbox",
+    help="Pathfile from geojson output",
     type=str,
-    default="data/supertiles.geojson",
+    required=True
 )
 def main(username, password, geojson_file, data_folder, lansat_index, geojson_output):
     landsat2geojson(

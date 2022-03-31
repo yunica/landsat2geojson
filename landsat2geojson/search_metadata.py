@@ -1,11 +1,8 @@
 import requests
-import itertools
 from datetime import datetime, timedelta
 from .constants import DAYS_AGO, LIMIT_QUERY
 
 from landsatxplore.api import API
-from landsatxplore.earthexplorer import EarthExplorer
-from landsatxplore.errors import LandsatxploreError
 
 
 def fetch_sat_api(query):

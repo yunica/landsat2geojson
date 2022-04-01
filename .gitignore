@@ -4,3 +4,4 @@ data/
 build/
 *.pyc
 *.geojson
+*.egg

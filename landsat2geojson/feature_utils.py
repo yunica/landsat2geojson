@@ -1,5 +1,5 @@
 import os
-from shapely.geometry import shape, box
+from shapely.geometry import shape, box, mapping
 from shapely.ops import unary_union
 from tqdm import tqdm
 from joblib import Parallel, delayed
@@ -69,6 +69,10 @@ def correct_download(feature):
     )
 
 
+def check_geom(geom):
+    return geom.is_valid and "Polygon" in geom.geom_type
+
+
 def merge_scene_features(scenes, features_shp):
     # compile features include
     new_scenes = []
@@ -77,11 +81,28 @@ def merge_scene_features(scenes, features_shp):
         features_contains = []
         for feature in features_shp:
             feature_shp = feature["geom"]
-            if scene_shp.intersects(feature_shp) and not feature.get("is_include"):
-                features_contains.append(deepcopy(feature))
-                feature["is_include"] = True
+            if not feature.get("is_include"):
+                if scene_shp.contains(feature_shp):
+                    feature["is_include"] = True
+                    feature["status"] = "contains"
+                    features_contains.append(deepcopy(feature))
+                elif scene_shp.intersects(feature_shp):
+                    try:
+                        intersection = scene_shp.intersection(feature_shp)
+                        difference = feature_shp.difference(scene_shp)
+                        feature["status"] = "intersects"
+                        if check_geom(intersection):
+                            new_feature = deepcopy(feature)
+                            new_feature["geometry"] = mapping(intersection)
+                            features_contains.append(new_feature)
+                        if check_geom(difference):
+                            feature["geometry"] = mapping(difference)
+                        else:
+                            feature["is_include"] = True
+                    except Exception as ex:
+                        logger.error(ex.__str__())
         scene["features_contains"] = features_contains
-        # remove scenes no include
+        # remove scenes no features
         if features_contains:
             new_scenes.append(scene)
     return new_scenes

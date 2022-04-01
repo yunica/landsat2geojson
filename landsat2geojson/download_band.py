@@ -133,7 +133,7 @@ class WrapperEarthExplorer(EarthExplorer):
         bands,
         output_dir="",
         dataset=None,
-        timeout=300,
+        timeout=600,
         skip=False,
     ):
         create_folder(output_dir)

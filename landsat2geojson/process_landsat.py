@@ -51,7 +51,7 @@ def calculate_index_feature(scenes, metadata, data_folder):
         raw_data["crs"] = crs
         raw_data["crs_json"] = crs_geojson
 
-        if data_folder and index_result:
+        if data_folder and index_result.any():
             display_id = scene_.get("display_id")
             with rio.open(
                     f"{data_folder_}/{display_id}__{index_name}.TIF", "w", **extra

@@ -47,12 +47,12 @@ def landsat2geojson(
             [
                 i.get("raw_data").get("index_result_vector", [])
                 for i in data_result
-                if i.get("raw_data").get("index_result_vector")
             ]
         )
     )
     if not index_data_orig:
-        print(f"we did not find results in the geojson file that satisfy the index {index_name}")
+        click.echo("=============", err=True)
+        click.echo(f"we did not find results in the geojson file that satisfy the index {index_name} :(", err=True)
         return
     # search osm
     minx, miny, maxx, maxy = box_merge.bounds
@@ -65,7 +65,7 @@ def landsat2geojson(
             [
                 i.get("raw_data").get("index_result_vector_4326", [])
                 for i in data_result
-                if i.get("raw_data").get("index_result_vector_4326")
+                if i.get("raw_data").get("index_result_vector_4326", None)
             ]
         )
     )

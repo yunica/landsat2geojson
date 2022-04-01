@@ -1,5 +1,5 @@
 DAYS_AGO = 120
-LIMIT_QUERY = 500
+LIMIT_QUERY = 200
 FEATURE_CLEAN_FIELDS = [
     "cloud_cover",
     "entity_id",
@@ -13,10 +13,8 @@ FEATURE_CLEAN_FIELDS = [
     "spatial_bounds",
     "spatial_coverage",
 ]
-PATH_SW_LANDSAT = "https://landsat-pds.s3.amazonaws.com/c1/L8"
 WATER_BANDS = ["B3", "B6"]
 TIMEOUT = 60
-
 QUERY_DATA = {
     "WATER": {
         "bands": ["B3", "B6"],

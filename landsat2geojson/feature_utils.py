@@ -71,16 +71,20 @@ def correct_download(feature):
 
 def merge_scene_features(scenes, features_shp):
     # compile features include
+    new_scenes = []
     for scene in scenes:
         scene_shp = scene["spatial_coverage"]
         features_contains = []
         for feature in features_shp:
             feature_shp = feature["geom"]
-            if scene_shp.contains(feature_shp) and not feature.get("is_include"):
+            if scene_shp.intersects(feature_shp) and not feature.get("is_include"):
                 features_contains.append(deepcopy(feature))
                 feature["is_include"] = True
         scene["features_contains"] = features_contains
-        return scenes
+        # remove scenes no include
+        if features_contains:
+            new_scenes.append(scene)
+    return new_scenes
 
 
 def clean_path(path_=""):

@@ -6,10 +6,13 @@ import logging
 from tqdm import tqdm
 from landsatxplore.earthexplorer import EarthExplorer
 from landsatxplore.errors import EarthExplorerError
+from landsatxplore.api import API
 import rasterio as rio
 from rasterio import mask
 import geopandas as gpd
 from .feature_utils import create_folder, clean_path, url2name, get_crs_dataset
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 logger = logging.getLogger("__name__")
 
@@ -19,8 +22,23 @@ EE_DOWNLOAD_URL = (
 
 
 class WrapperEarthExplorer(EarthExplorer):
+
     def __init__(self, username, password):
-        super(WrapperEarthExplorer, self).__init__(username, password)
+        # retry setup
+        session_ = requests.Session()
+
+        retries = Retry(total=5,
+                        backoff_factor=2,
+                        status_forcelist=[429, 500, 502, 503, 504],
+                        method_whitelist=["HEAD", "GET", "OPTIONS"]
+                        )
+        adapter = HTTPAdapter(max_retries=retries)
+        session_.mount('https://', adapter)
+        session_.mount('http://', adapter)
+
+        self.session = session_
+        self.login(username, password)
+        self.api = API(username, password)
 
     def _read_from_path(self, file_path, features_contains):
         dataset = rio.open(file_path)
@@ -130,13 +148,14 @@ class WrapperEarthExplorer(EarthExplorer):
         self,
         display_id,
         features_contains,
-        bands,
+        bands=[],
         output_dir="",
         dataset=None,
         timeout=600,
         skip=False,
     ):
         create_folder(output_dir)
+
         urls = [
             EE_DOWNLOAD_URL.format(
                 data_product_id="5f85f0419985f2aa",
@@ -160,10 +179,10 @@ def download_scenes(username, password, scenes, bands, output_dir):
     output_dir = clean_path(output_dir)
     ee = WrapperEarthExplorer(username, password)
 
-    def download_scene(ee_, scene_, bands_, output_dir_):
+    def download_scene_(ee_, scene_, bands_, output_dir_):
         display_id = scene_.get("display_id")
         features_contains = gpd.GeoSeries(
-            [i["geom"] for i in scene_.get("features_contains")]
+            [i["geom"] for i in scene_.get("features_contains", [])]
         ).set_crs(4326)
         if not ee_.logged_in():
             ee_ = WrapperEarthExplorer(username, password)
@@ -173,7 +192,7 @@ def download_scenes(username, password, scenes, bands, output_dir):
         return scene_
 
     scenes_download = Parallel(n_jobs=-1)(
-        delayed(download_scene)(ee, scene, bands, output_dir)
+        delayed(download_scene_)(ee, scene, bands, output_dir)
         for scene in tqdm(scenes, desc="Prepare download data")
     )
     return scenes_download

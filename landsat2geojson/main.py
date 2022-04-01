@@ -22,6 +22,7 @@ def landsat2geojson(
         username, password, geojson_file, data_folder, lansat_index, geojson_output
 ):
     metadata = QUERY_DATA.get(lansat_index)
+
     index_name = metadata.get("index_name")
     features = json.load(open(geojson_file)).get("features")
     features_shp = fc2shp(features)
@@ -37,7 +38,7 @@ def landsat2geojson(
         [minor_cloud(scene) for scene in data_result.values()], features_shp
     )
     data_result = download_scenes(
-        username, password, data_result, metadata.get("bands"), data_folder
+        username, password, data_result, metadata.get("bands", []), data_folder
     )
     # calculate mndwi
     data_result = calculate_index_feature(data_result, metadata, data_folder)
@@ -52,8 +53,7 @@ def landsat2geojson(
     )
     if not index_data_orig:
         click.echo("=============", err=True)
-        click.echo(f"we did not find results in the geojson file that satisfy the index {index_name} :(", err=True)
-        return
+        raise Exception(f"we did not find results in the geojson file that satisfy the index {index_name} :(")
     # search osm
     minx, miny, maxx, maxy = box_merge.bounds
     osm_data = get_overpass_data(

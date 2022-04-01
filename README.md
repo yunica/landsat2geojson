@@ -46,6 +46,12 @@ docker run  --rm -v ${PWD}:/mnt \
   landsat2geojson --geojson_file=test.geojson --data_folder=data/ --geojson_output=data/salida123.geojson  
 
 ```
+or 
+```shell
+docker run  --rm -v ${PWD}:/mnt landsat2geojson:v1 \
+  landsat2geojson -u=<LANDSATXPLORE_USERNAME> -p=<LANDSATXPLORE_PASSWORD> --geojson_file=test.geojson --data_folder=data/ --geojson_output=data/salida123.geojson  
+
+```
 # Usage
 
 

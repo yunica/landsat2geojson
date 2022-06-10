@@ -1,18 +1,20 @@
 import io
+import logging
 import os
+
+import geopandas as gpd
+import rasterio as rio
 import requests
 from joblib import Parallel, delayed
-import logging
-from tqdm import tqdm
+from landsatxplore.api import API
 from landsatxplore.earthexplorer import EarthExplorer
 from landsatxplore.errors import EarthExplorerError
-from landsatxplore.api import API
-import rasterio as rio
 from rasterio import mask
-import geopandas as gpd
-from .feature_utils import create_folder, clean_path, url2name, get_crs_dataset
-from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+from tqdm import tqdm
+
+from .feature_utils import clean_path, create_folder, get_crs_dataset, url2name
 
 logger = logging.getLogger("__name__")
 
@@ -22,19 +24,19 @@ EE_DOWNLOAD_URL = (
 
 
 class WrapperEarthExplorer(EarthExplorer):
-
     def __init__(self, username, password):
         # retry setup
         session_ = requests.Session()
 
-        retries = Retry(total=5,
-                        backoff_factor=2,
-                        status_forcelist=[429, 500, 502, 503, 504],
-                        method_whitelist=["HEAD", "GET", "OPTIONS"]
-                        )
+        retries = Retry(
+            total=5,
+            backoff_factor=2,
+            status_forcelist=[429, 500, 502, 503, 504],
+            method_whitelist=["HEAD", "GET", "OPTIONS"],
+        )
         adapter = HTTPAdapter(max_retries=retries)
-        session_.mount('https://', adapter)
-        session_.mount('http://', adapter)
+        session_.mount("https://", adapter)
+        session_.mount("http://", adapter)
 
         self.session = session_
         self.login(username, password)
@@ -90,59 +92,60 @@ class WrapperEarthExplorer(EarthExplorer):
             if error_msg:
                 raise EarthExplorerError(error_msg)
             download_url = r.json().get("url")
-        try:
 
-            with self.session.get(
-                download_url, stream=True, allow_redirects=True, timeout=timeout
-            ) as r:
-                file_size = int(r.headers.get("Content-Length"))
-                with tqdm(
-                    desc=f"download  {url2name(url)} file",
-                    total=file_size,
-                    unit_scale=True,
-                    unit="B",
-                    unit_divisor=1024,
-                ) as pbar:
+            try:
 
-                    byio = io.BytesIO()
-                    for chunk in r.iter_content(chunk_size=chunk_size):
-                        if chunk:
-                            byio.write(chunk)
-                            pbar.update(chunk_size)
-                    self._save_file_path(byio, output_dir, f"{url2name(url)}")
-                    # check save file or memory
-                    with rio.io.MemoryFile(byio.getvalue()) as memfile:
-                        dataset = memfile.open()
-                        if "4326" not in str(dataset.crs) and str(dataset.crs):
-                            features_contains = features_contains.to_crs(
-                                get_crs_dataset(dataset.crs)
+                with self.session.get(
+                    download_url, stream=True, allow_redirects=True, timeout=timeout
+                ) as r:
+                    file_size = int(r.headers.get("Content-Length"))
+                    with tqdm(
+                        desc=f"download  {url2name(url)} file",
+                        total=file_size,
+                        unit_scale=True,
+                        unit="B",
+                        unit_divisor=1024,
+                    ) as pbar:
+
+                        byio = io.BytesIO()
+                        for chunk in r.iter_content(chunk_size=chunk_size):
+                            if chunk:
+                                byio.write(chunk)
+                                pbar.update(chunk_size)
+                        self._save_file_path(byio, output_dir, f"{url2name(url)}")
+                        # check save file or memory
+                        with rio.io.MemoryFile(byio.getvalue()) as memfile:
+                            dataset = memfile.open()
+                            if "4326" not in str(dataset.crs) and str(dataset.crs):
+                                features_contains = features_contains.to_crs(
+                                    get_crs_dataset(dataset.crs)
+                                )
+
+                            out_image, out_transform = mask.mask(
+                                dataset, list(features_contains), crop=True
+                            )
+                            out_meta = dataset.meta
+                            out_meta.update(
+                                {
+                                    "nodata": 0,
+                                    "height": out_image.shape[1],
+                                    "width": out_image.shape[2],
+                                    "transform": out_transform,
+                                    "count": 1,
+                                    "dtype": "float64",
+                                }
                             )
 
-                        out_image, out_transform = mask.mask(
-                            dataset, list(features_contains), crop=True
-                        )
-                        out_meta = dataset.meta
-                        out_meta.update(
-                            {
-                                "nodata": 0,
-                                "height": out_image.shape[1],
-                                "width": out_image.shape[2],
-                                "transform": out_transform,
-                                "count": 1,
-                                "dtype": "float64",
+                            return {
+                                "profile": dataset.profile,
+                                "meta": out_meta,
+                                "out_image": out_image.squeeze(),
                             }
-                        )
 
-                        return {
-                            "profile": dataset.profile,
-                            "meta": out_meta,
-                            "out_image": out_image.squeeze(),
-                        }
-
-        except requests.exceptions.Timeout:
-            raise EarthExplorerError(
-                "Connection timeout after {} seconds.".format(timeout)
-            )
+            except requests.exceptions.Timeout:
+                raise EarthExplorerError(
+                    "Connection timeout after {} seconds.".format(timeout)
+                )
 
     def download(
         self,
@@ -175,7 +178,23 @@ class WrapperEarthExplorer(EarthExplorer):
         return data_out
 
 
-def download_scenes(username, password, scenes, bands, output_dir):
+def download_scenes(
+    username: str, password: str, scenes: list, bands: list, output_dir: str
+):
+    """
+    The download_scenes function downloads the bands for each scene.
+
+    Args:
+        username (str): username for earthexplorer.
+        password (str):  password for earthexplorer.
+        scenes (list): A list of scenes with features.
+        bands (list): A list of bands.
+        output_dir (str): path of directory.
+
+    Returns:
+         list : A list of scenes with download bands.
+    """
+
     output_dir = clean_path(output_dir)
     ee = WrapperEarthExplorer(username, password)
 

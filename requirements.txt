@@ -6,6 +6,6 @@ joblib
 tqdm
 shapely
 geopandas
-git+https://github.com/yunica/landsatxplore.git@landsat2geojson
+git+https://github.com/yunica/landsatxplore.git@landsat2geojson#pyproject.toml
 overpass
 numpy

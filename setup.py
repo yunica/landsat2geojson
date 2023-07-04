@@ -25,11 +25,37 @@ setup(
     name="landsat2geojson",
     author="Junior Flores",
     author_email="junior@developmentseed.org",
-    version="0.0.2",
+    version="0.0.3",
     description="Script to extract features from landsat",
     long_description=long_description,
+    long_description_content_type='text/markdown',
     url="https://github.com/yunica/landsat2geojson",
-    keywords="",
+    keywords=[
+        "earth observation",
+        "remote sesing",
+        "GIS",
+        "satellite imagery",
+        "landsat",
+        "water",
+        "usgs",
+        "geojson",
+        "overpass"
+    ],
+    classifiers=[
+        "Intended Audience :: Developers",
+        "Intended Audience :: Education",
+        "Intended Audience :: Science/Research",
+        "Operating System :: MacOS",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: Unix",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development",
+    ],
     entry_points={
         "console_scripts": [
             "landsat2geojson = landsat2geojson.main:main",
@@ -38,4 +64,5 @@ setup(
     packages=find_packages(exclude=["docs", "tests*"]),
     include_package_data=True,
     install_requires=install_requires,
+    python_requires='>=3.9'
 )
